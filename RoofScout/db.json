@@ -1,0 +1,524 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "name": "Admin",
+      "email": "admin@roofscout.com"
+    },
+    {
+      "id": 2,
+      "username": "john",
+      "password": "john123",
+      "role": "user",
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    {
+      "id": 3,
+      "username": "agam_18",
+      "password": "agam@18",
+      "name": "Ekagamjot Singh ",
+      "email": "ekagamjot0143.becse24@chitkara.edu.in",
+      "role": "user"
+    },
+    {
+      "id": 4,
+      "username": "testuser",
+      "password": "test123",
+      "name": "Test User",
+      "email": "test@test.com",
+      "role": "user"
+    },
+    {
+      "id": 5,
+      "username": "gh43",
+      "password": "123456",
+      "name": "ghgh",
+      "email": "gh@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": 6,
+      "username": "dead69",
+      "password": "123456",
+      "name": "dead",
+      "email": "dead@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": 7,
+      "username": "dead34",
+      "password": "123456",
+      "name": "dead",
+      "email": "dead34@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": 8,
+      "username": "Aadi69",
+      "password": "123456",
+      "name": "Aadi",
+      "email": "aadi@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": 9,
+      "username": "aadi_great",
+      "password": "123456",
+      "name": "Aadi",
+      "email": "aadi4@gmail.com",
+      "role": "user"
+    }
+  ],
+  "properties": [
+    {
+      "id": 1,
+      "title": "Modern Villa in Jaipur",
+      "address": "123 Vaishali Nagar, Jaipur",
+      "state": "Rajasthan",
+      "area": 3500,
+      "price": 8500000,
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "type": "House",
+      "listingType": "Sell",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
+      "description": "Luxurious modern villa with spacious rooms and premium amenities.",
+      "owner": {
+        "name": "Rajesh Kumar",
+        "phone": "9876543210",
+        "email": "rajesh@example.com"
+      },
+      "createdAt": "2024-01-15"
+    },
+    {
+      "id": 2,
+      "title": "Cozy Apartment in Mumbai",
+      "address": "45 Andheri West, Mumbai",
+      "state": "Maharashtra",
+      "area": 1200,
+      "price": 45000,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "type": "Apartment",
+      "listingType": "Rent",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "description": "Well-maintained apartment in prime location with excellent connectivity.",
+      "owner": {
+        "name": "Priya Sharma",
+        "phone": "9876543211",
+        "email": "priya@example.com"
+      },
+      "createdAt": "2024-01-20"
+    },
+    {
+      "id": 3,
+      "title": "Commercial Plot in Gurgaon",
+      "address": "Sector 45, Gurgaon",
+      "state": "Haryana",
+      "area": 5000,
+      "price": 15000000,
+      "bedrooms": 0,
+      "bathrooms": 0,
+      "type": "Plot",
+      "listingType": "Sell",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800",
+      "description": "Prime commercial plot suitable for office complex or retail space.",
+      "owner": {
+        "name": "Admin",
+        "phone": "9876543212",
+        "email": "admin@roofscout.com"
+      },
+      "createdAt": "2024-01-25"
+    },
+    {
+      "id": 4,
+      "title": "Beach House in Goa",
+      "address": "Candolim Beach Road, Goa",
+      "state": "Goa",
+      "area": 2800,
+      "price": 12000000,
+      "bedrooms": 3,
+      "bathrooms": 3,
+      "type": "House",
+      "listingType": "Sell",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
+      "description": "Stunning beach house with panoramic sea views and private garden.",
+      "owner": {
+        "name": "Michael Dsouza",
+        "phone": "9876543214",
+        "email": "michael@example.com"
+      },
+      "createdAt": "2024-02-05"
+    },
+    {
+      "id": 5,
+      "actionType": "Sell",
+      "sellOption": "list",
+      "title": "2BHK",
+      "address": "ModelTown,Patiala",
+      "state": "Punjab",
+      "area": 2900,
+      "price": 30000000,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "type": "House",
+      "description": "Garden in front of House , Swimming Pool on backside of House.",
+      "listingType": "Sell",
+      "owner": {
+        "name": "Ekagamjot Singh ",
+        "email": "ekagamjot0143.becse24@chitkara.edu.in",
+        "phone": "9876543210"
+      },
+      "userId": 3,
+      "status": "Available",
+      "createdAt": "2026-03-04"
+    },
+    {
+      "id": 7,
+      "title": "2BHK Apartment",
+      "type": "apartment / flat",
+      "listingType": "Rent",
+      "price": 6200,
+      "deposit": 20000,
+      "bhk": "2 BHK",
+      "furnishing": "Semi-Furnished",
+      "amenities": {
+        "parking": false,
+        "ac": false,
+        "backup": false,
+        "kitchen": false,
+        "security": false,
+        "balcony": false
+      },
+      "area": 0,
+      "bedrooms": 2,
+      "bathrooms": 0,
+      "state": "Delhi",
+      "address": "Delhi",
+      "description": "2 BHK Semi-Furnished property for rent",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "owner": {
+        "name": "Ekagamjot Singh ",
+        "email": "ekagamjot0143.becse24@chitkara.edu.in",
+        "phone": "9876543210"
+      },
+      "userId": 3,
+      "createdAt": "2026-03-05"
+    },
+    {
+      "id": 8,
+      "title": "2BHK Apartment",
+      "type": "apartment / flat",
+      "listingType": "Rent",
+      "price": 30000,
+      "deposit": 5000,
+      "bhk": "1 BHK",
+      "furnishing": "Semi-Furnished",
+      "amenities": {
+        "parking": false,
+        "ac": false,
+        "backup": false,
+        "kitchen": false,
+        "security": false,
+        "balcony": false
+      },
+      "area": 0,
+      "bedrooms": 1,
+      "bathrooms": 0,
+      "state": "Delhi",
+      "address": "Delhi",
+      "description": "1 BHK Semi-Furnished property for rent",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "owner": {
+        "name": "Ekagamjot Singh ",
+        "email": "ekagamjot0143.becse24@chitkara.edu.in",
+        "phone": "9876543210"
+      },
+      "userId": 3,
+      "createdAt": "2026-03-05"
+    },
+    {
+      "id": 9,
+      "title": "2BHK",
+      "type": "plot",
+      "listingType": "Sell",
+      "price": 5000000,
+      "area": 2500,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "state": "Delhi",
+      "address": "Delhi",
+      "description": ".............",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Ekagamjot Singh ",
+        "email": "ekagamjot0143.becse24@chitkara.edu.in",
+        "phone": "9876543210"
+      },
+      "userId": 3,
+      "createdAt": "2026-03-05"
+    },
+    {
+      "id": 10,
+      "title": "Modern",
+      "type": "plot",
+      "listingType": "Sell",
+      "price": 17500000,
+      "area": 1199,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "state": "Punjab",
+      "address": "Punjab",
+      "description": "/////////",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Admin",
+        "email": "admin@roofscout.com",
+        "phone": "9876543210"
+      },
+      "userId": 1,
+      "createdAt": "2026-03-05"
+    },
+    {
+      "id": 11,
+      "title": "Horror House",
+      "type": "plot",
+      "listingType": "Sell",
+      "price": 5000000,
+      "area": 1200,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "state": "Punjab",
+      "address": "Punjab",
+      "description": "............",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Admin",
+        "email": "admin@roofscout.com",
+        "phone": "9876543210"
+      },
+      "userId": 1,
+      "createdAt": "2026-03-06"
+    },
+    {
+      "id": 12,
+      "title": "Sea facing Villa",
+      "type": "villa",
+      "listingType": "Sell",
+      "price": 5000000,
+      "area": 1500,
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "state": "Delhi",
+      "address": "Delhi",
+      "description": "................",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Aadi",
+        "email": "aadi@gmail.com",
+        "phone": "9876543210"
+      },
+      "userId": 8,
+      "createdAt": "2026-03-06"
+    },
+    {
+      "id": 13,
+      "title": "Modern 2BHK Apartment",
+      "type": "villa",
+      "listingType": "Sell",
+      "price": 5000000,
+      "area": 1200,
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "state": "Punjab",
+      "address": "Punjab",
+      "description": "...........",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Aadi",
+        "email": "aadi@gmail.com",
+        "phone": "9876543210"
+      },
+      "userId": 8,
+      "createdAt": "2026-03-06"
+    },
+    {
+      "id": 14,
+      "title": "MH",
+      "type": "villa",
+      "listingType": "Sell",
+      "price": 13600000,
+      "area": 3000,
+      "bedrooms": 4,
+      "bathrooms": 4,
+      "state": "Punjab",
+      "address": "........",
+      "description": "......",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Aadi",
+        "email": "aadi@gmail.com",
+        "phone": "9876543210"
+      },
+      "userId": 8,
+      "createdAt": "2026-03-06"
+    },
+    {
+      "id": 15,
+      "title": "Cozy 2BHK bandra apartment",
+      "type": "independent house / villa",
+      "listingType": "Rent",
+      "price": 30000,
+      "deposit": 8000,
+      "bhk": "2 BHK",
+      "furnishing": "Semi-Furnished",
+      "amenities": {
+        "parking": true,
+        "ac": true,
+        "backup": false,
+        "kitchen": false,
+        "security": false,
+        "balcony": false
+      },
+      "area": 0,
+      "bedrooms": 2,
+      "bathrooms": 0,
+      "state": "Punjab",
+      "address": "Patiala,Punjab",
+      "description": "2 BHK Semi-Furnished property for rent",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
+      "owner": {
+        "name": "Aadi",
+        "email": "aadi@gmail.com",
+        "phone": "9876543210"
+      },
+      "userId": 8,
+      "createdAt": "2026-03-07"
+    },
+    {
+      "id": 16,
+      "title": "White House ",
+      "type": "villa",
+      "listingType": "Sell",
+      "price": 10000000,
+      "area": 3000,
+      "bedrooms": 4,
+      "bathrooms": 4,
+      "state": "Punjab",
+      "address": "Patiala,Punjab",
+      "description": "...........",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Aadi",
+        "email": "aadi@gmail.com",
+        "phone": "9876543210"
+      },
+      "userId": 8,
+      "createdAt": "2026-03-07"
+    },
+    {
+      "id": 17,
+      "title": "moderrr",
+      "type": "plot",
+      "listingType": "Sell",
+      "price": 5000000,
+      "area": 3000,
+      "bedrooms": 0,
+      "bathrooms": 0,
+      "state": "Punjab",
+      "address": "Punjab",
+      "description": "",
+      "status": "Available",
+      "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+      "owner": {
+        "name": "Aadi",
+        "email": "aadi@gmail.com",
+        "phone": "9876543210"
+      },
+      "userId": 8,
+      "createdAt": "2026-03-09"
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "name": "agam",
+      "email": "ekagamjot0143.becse24@chitkara.edu.in",
+      "mobile": "0946766232211",
+      "date": "",
+      "time": "",
+      "message": "I am interseted in Property",
+      "propertyId": 3,
+      "requestType": "Tour",
+      "userId": 3,
+      "status": "Pending",
+      "createdAt": "2026-03-04T12:44:43.602Z"
+    },
+    {
+      "id": 2,
+      "propertyId": 7,
+      "userId": 3,
+      "name": "Aadi",
+      "email": "aadi@gmaqil.com",
+      "mobile": "+91",
+      "requestType": "Inquiry",
+      "message": "....",
+      "date": "2026-03-05",
+      "time": "N/A",
+      "status": "Pending",
+      "createdAt": "2026-03-05T10:07:47.145Z"
+    },
+    {
+      "id": 3,
+      "propertyId": 7,
+      "name": "Aadi",
+      "email": "aadi@gmail.com",
+      "mobile": "+91",
+      "requestType": "Inquiry",
+      "message": ".....",
+      "date": "2026-03-05",
+      "time": "N/A",
+      "status": "Pending",
+      "createdAt": "2026-03-05T10:08:33.031Z"
+    },
+    {
+      "id": 4,
+      "propertyId": 12,
+      "userId": 6,
+      "name": "dead",
+      "email": "deas@gmail.com",
+      "mobile": "+91 9876543210",
+      "requestType": "Tour",
+      "message": "I am intersted in this property",
+      "date": "Today",
+      "time": "9:00 AM",
+      "status": "Approved",
+      "createdAt": "2026-03-06T15:59:59.347Z"
+    }
+  ],
+  "stats": {
+    "totalListed": 16,
+    "totalSold": 0,
+    "totalRented": 0,
+    "revenue": 0
+  }
+}
