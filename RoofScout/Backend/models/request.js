@@ -14,4 +14,4 @@ const requestSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Request", requestSchema);
+module.exports = mongoose.models.Request || mongoose.model("Request", requestSchema);

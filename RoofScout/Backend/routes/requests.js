@@ -106,9 +106,91 @@ router.put("/:id/status", async (req, res) => {
       return res.status(404).json({ success: false, message: "Request not found" });
     }
     
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${request.userId}`).emit('tourRequestStatusChanged', {
+        requestId: request._id,
+        status: request.status,
+        propertyId: request.propertyId
+      });
+    }
+    
     res.json({ success: true, message: "Status updated", request });
   } catch (err) {
     console.error("PUT /api/request/:id/status error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * DELETE /api/request/:id
+ * Delete a request (application or tour)
+ */
+router.delete("/:id", async (req, res) => {
+  try {
+    const request = await Request.findByIdAndDelete(req.params.id);
+    
+    if (!request) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+    
+    // Emit socket event for real-time removal from owner's view
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${request.userId}`).emit('tourRequestDeleted', {
+        requestId: request._id,
+        propertyId: request.propertyId,
+        userId: request.userId
+      });
+      // Also emit to property owner if we knew their userId
+      io.emit('requestDeleted', {
+        requestId: request._id,
+        propertyId: request.propertyId,
+        userId: request.userId
+      });
+    }
+    
+    res.json({ success: true, message: "Request deleted successfully", request });
+  } catch (err) {
+    console.error("DELETE /api/request/:id error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * PUT /api/request/:id
+ * Update a request (edit message, date, time)
+ */
+router.put("/:id", async (req, res) => {
+  try {
+    const { message, date, time, mobile } = req.body;
+    
+    const request = await Request.findByIdAndUpdate(
+      req.params.id,
+      { message, date, time, mobile, updatedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!request) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+    
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${request.userId}`).emit('tourRequestUpdated', {
+        requestId: request._id,
+        message: request.message,
+        date: request.date,
+        time: request.time,
+        mobile: request.mobile
+      });
+    }
+    
+    res.json({ success: true, message: "Request updated successfully", request });
+  } catch (err) {
+    console.error("PUT /api/request/:id error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

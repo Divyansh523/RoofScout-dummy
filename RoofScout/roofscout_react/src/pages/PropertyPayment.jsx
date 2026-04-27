@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { CreditCard, Wallet, Home, CheckCircle, ShieldCheck } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import API from '../utils/axiosConfig';
 
 function PropertyPayment() {
     const [theme] = useTheme();
@@ -105,24 +106,55 @@ function PropertyPayment() {
         setIsProcessing(true);
 
         try {
+            // First, fetch property details to get owner info
+            const propertyResponse = await API.get(`/properties/${propertyData.houseId}/view`);
+            const property = propertyResponse.data.property;
+            
+            const amountPaid = paymentType === 'emi' ? downpaymentAmount : propertyPrice;
+            const remainingAmount = paymentType === 'emi' ? loanAmount : 0;
+            
+            // Save payment record
+            const paymentData = {
+                propertyId: propertyData.houseId,
+                userId: user?._id || user?.id,
+                ownerId: property?.user,
+                buyerName: loggedUser,
+                ownerName: property?.ownerName || property.user?.name || 'Unknown',
+                propertyTitle: propertyData.title,
+                price: propertyPrice,
+                paymentType: paymentType,
+                amountPaid: amountPaid,
+                remainingAmount: remainingAmount,
+                emiDuration: paymentType === 'emi' ? tenureYears : null,
+                emiAmount: paymentType === 'emi' ? calculateEMI() : null,
+                paymentMethod: 'card',
+                transactionId: 'TXN' + Date.now()
+            };
+
+            const paymentResponse = await API.post('/payments', paymentData);
+            
+            if (!paymentResponse.data.success) {
+                throw new Error('Failed to save payment record');
+            }
+
             // Remove from backend database so it stops showing up in listings
-            const response = await fetch(`http://localhost:5000/api/property/${propertyData.houseId}`, {
+            const deleteResponse = await fetch(`http://localhost:5000/api/property/${propertyData.houseId}`, {
                 method: 'DELETE',
             });
-            const result = await response.json();
+            const deleteResult = await deleteResponse.json();
 
-            if (response.ok && result.success) {
+            if (deleteResponse.ok && deleteResult.success) {
                 setTimeout(() => {
                     alert(`Payment Successful! You have requested to ${isRent ? 'rent' : 'buy'} ${propertyData.title}. The owner will contact you shortly to finalize paperwork.`);
                     setIsProcessing(false);
                     navigate('/userdashboard');
                 }, 1500); // Small delay for UX
             } else {
-                alert(`Payment processed, but failed to remove listing: ${result.message || 'Unknown error'}`);
+                alert(`Payment processed, but failed to remove listing: ${deleteResult.message || 'Unknown error'}`);
                 setIsProcessing(false);
             }
         } catch (error) {
-            console.error('Error removing property:', error);
+            console.error('Error processing payment:', error);
             alert('An error occurred while finalizing the transaction.');
             setIsProcessing(false);
         }

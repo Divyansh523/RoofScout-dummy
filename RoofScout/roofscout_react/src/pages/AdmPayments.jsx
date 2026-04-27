@@ -11,6 +11,7 @@ function AdmPayments() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [theme, setTheme] = useTheme();
   const [search, setSearch] = useState("");
@@ -20,32 +21,39 @@ function AdmPayments() {
     localStorage.setItem("rs-theme", theme);
   }, [theme]);
 
-  // Fetch payments (requests with payment_status = 'Paid')
+  // Fetch payments from new payments endpoint
   useEffect(() => {
     const fetchPayments = async () => {
+      console.log("Fetching payments...");
       try {
-        const { data } = await API.get("/request");
+        const { data } = await API.get("/payments");
+        console.log("Payments response:", data);
         
         if (data.success) {
-          const paymentsList = data.requests
-            .filter(req => req.payment_status === 'Paid')
-            .map(req => ({
-              id: req._id || req.id,
-              payerName: req.applicant_name || req.requester_name || req.name || "Unknown",
-              email: req.email || "N/A",
-              mobile: req.mobile || "N/A",
-              propertyId: req.property_id || req.propertyId,
-              amount: req.price || 5000, // Default booking amount
-              paymentStatus: req.payment_status,
-              requestStatus: req.status || "Pending",
-              paymentDate: req.requested_date || req.date || new Date().toISOString().split('T')[0],
-              paymentTime: req.requested_time || req.time || "N/A"
-            }));
+          const paymentsList = data.payments.map(payment => ({
+            id: payment._id || payment.id,
+            buyerName: payment.buyerName || "Unknown",
+            ownerName: payment.ownerName || "Unknown",
+            propertyTitle: payment.propertyTitle || "N/A",
+            propertyId: payment.propertyId,
+            price: payment.price || 0,
+            paymentType: payment.paymentType || 'full',
+            amountPaid: payment.amountPaid || 0,
+            remainingAmount: payment.remainingAmount || 0,
+            emiDuration: payment.emiDuration || null,
+            emiAmount: payment.emiAmount || null,
+            paymentDate: payment.paymentDate || payment.createdAt,
+            paymentStatus: payment.paymentStatus || 'completed',
+            paymentMethod: payment.paymentMethod || 'N/A',
+            transactionId: payment.transactionId || 'N/A'
+          }));
           
           setPayments(paymentsList);
+          setError(null);
         }
       } catch (err) {
         console.error("Error fetching payments:", err);
+        setError(err.response?.data?.message || err.message || "Failed to fetch payments");
       } finally {
         setLoading(false);
       }
@@ -54,8 +62,9 @@ function AdmPayments() {
   }, []);
 
   const filtered = payments.filter(payment => 
-    payment.payerName.toLowerCase().includes(search.toLowerCase()) ||
-    payment.email.toLowerCase().includes(search.toLowerCase())
+    payment.buyerName.toLowerCase().includes(search.toLowerCase()) ||
+    payment.ownerName.toLowerCase().includes(search.toLowerCase()) ||
+    payment.propertyTitle.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -117,6 +126,12 @@ function AdmPayments() {
 
             {loading ? (
               <div className="text-center py-16 text-gray-500">Loading payments...</div>
+            ) : error ? (
+              <div className="text-center py-12 text-red-500">
+                <p className="text-lg font-semibold">Error loading payments</p>
+                <p className="text-sm mt-2">{error}</p>
+                <p className="text-xs mt-4 text-gray-400">Make sure the backend server is running on port 5000</p>
+              </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 text-gray-500">No payments found.</div>
             ) : (
@@ -124,15 +139,15 @@ function AdmPayments() {
                 <table className="w-full text-left">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Payer Name</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Email</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Mobile</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Property ID</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Amount</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Payment Status</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Request Status</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Date</th>
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Time</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Buyer Name</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Owner Name</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Property</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Price</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Payment Type</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Amount Paid</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Remaining</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Status</th>
+                      <th className="px-4 py-4 text-sm font-semibold text-gray-600 dark:text-gray-300">Date & Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -144,28 +159,34 @@ function AdmPayments() {
                         transition={{ duration: 0.3, delay: idx * 0.05 }}
                         className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                       >
-                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">{payment.payerName}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{payment.email}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{payment.mobile}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300 font-mono text-sm">{payment.propertyId}</td>
-                        <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-semibold">₹{payment.amount?.toLocaleString()}</td>
-                        <td className="px-6 py-4">
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                        <td className="px-4 py-4 font-medium text-gray-900 dark:text-gray-100">{payment.buyerName}</td>
+                        <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{payment.ownerName}</td>
+                        <td className="px-4 py-4 text-gray-600 dark:text-gray-300 max-w-xs truncate" title={payment.propertyTitle}>{payment.propertyTitle}</td>
+                        <td className="px-4 py-4 text-gray-900 dark:text-gray-100 font-semibold">₹{payment.price?.toLocaleString()}</td>
+                        <td className="px-4 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            payment.paymentType === 'full' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                            'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                          }`}>
+                            {payment.paymentType === 'full' ? 'Full Payment' : 'EMI'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-gray-900 dark:text-gray-100 font-semibold">₹{payment.amountPaid?.toLocaleString()}</td>
+                        <td className="px-4 py-4 text-gray-900 dark:text-gray-100 font-semibold">
+                          {payment.remainingAmount > 0 ? `₹${payment.remainingAmount.toLocaleString()}` : '₹0'}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            payment.paymentStatus === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
+                            payment.paymentStatus === 'partial' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
+                            'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}>
                             {payment.paymentStatus}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            payment.requestStatus === 'Approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
-                            payment.requestStatus === 'Pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
-                            payment.requestStatus === 'Rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' :
-                            'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                          }`}>
-                            {payment.requestStatus}
-                          </span>
+                        <td className="px-4 py-4 text-gray-600 dark:text-gray-300 text-sm">
+                          {new Date(payment.paymentDate).toLocaleDateString()} {new Date(payment.paymentDate).toLocaleTimeString()}
                         </td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{payment.paymentDate}</td>
-                        <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{payment.paymentTime}</td>
                       </motion.tr>
                     ))}
                   </tbody>

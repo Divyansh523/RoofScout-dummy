@@ -91,7 +91,7 @@ function NotificationToast() {
   return (
     <>
       {/* Floating Notification Bell */}
-      <div className="fixed top-20 right-6 z-50">
+      <div className="fixed top-24 right-6 z-50">
         <button
           onClick={() => setShowPanel(!showPanel)}
           className="relative p-3 bg-gray-800 hover:bg-gray-700 text-white rounded-full shadow-lg transition-all"
@@ -112,7 +112,7 @@ function NotificationToast() {
             initial={{ opacity: 0, x: 300 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 300 }}
-            className="fixed top-20 right-6 w-80 max-h-96 bg-gray-800 rounded-lg shadow-2xl z-50 overflow-hidden border border-gray-700"
+            className="fixed top-24 right-6 w-80 max-h-96 bg-gray-800 rounded-lg shadow-2xl z-50 overflow-hidden border border-gray-700 mt-2"
           >
             <div className="p-4 border-b border-gray-700 flex justify-between items-center">
               <h3 className="text-white font-semibold">Notifications</h3>

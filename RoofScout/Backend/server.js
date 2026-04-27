@@ -18,6 +18,7 @@ const errorHandler = require("./middleware/errorHandler");
 const authRoutes = require("./routes/auth");
 const propertyRoutes = require("./routes/properties");
 const requestRoutes = require("./routes/requests");
+const paymentRoutes = require("./routes/payments");
 
 const app = express();
 const server = http.createServer(app);
@@ -44,6 +45,7 @@ app.set("io", io);
 app.use("/api/auth", authRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/request", requestRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes); 
 
 app.use(errorHandler);

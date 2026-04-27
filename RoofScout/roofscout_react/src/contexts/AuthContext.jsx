@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
     const storedUser = localStorage.getItem("user");
 
     if (storedToken) {
+      // Set initial state from storage
       setToken(storedToken);
       setRole(storedRole);
       setIsAuthenticated(true);
@@ -35,6 +36,24 @@ export function AuthProvider({ children }) {
           setUser(null);
         }
       }
+      
+      // Validate token by making a test API call
+      API.get("/properties", { headers: { Authorization: `Bearer ${storedToken}` } })
+        .catch((err) => {
+          // If token is invalid (401), clear auth state
+          if (err.response?.status === 401) {
+            console.log("Token expired or invalid, clearing auth state");
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            localStorage.removeItem("user");
+            localStorage.removeItem("userId");
+            localStorage.removeItem("name");
+            setToken(null);
+            setRole(null);
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        });
     }
     setLoading(false);
   }, []);

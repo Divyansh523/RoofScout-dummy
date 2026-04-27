@@ -17,4 +17,4 @@ const propertySchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { timestamps: true });
 
-module.exports = mongoose.model("Property", propertySchema);
+module.exports = mongoose.models.Property || mongoose.model("Property", propertySchema);

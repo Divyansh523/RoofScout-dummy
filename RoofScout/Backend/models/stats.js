@@ -7,4 +7,4 @@ const statsSchema = new mongoose.Schema({
   revenue: Number
 });
 
-module.exports = mongoose.model("Stats", statsSchema);
+module.exports = mongoose.models.Stats || mongoose.model("Stats", statsSchema);

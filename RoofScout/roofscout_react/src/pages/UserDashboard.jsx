@@ -1165,7 +1165,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import API, { getUserProperties, updateProperty, deleteProperty } from "../api";
-import useDarkMode from "../hooks/useDarkMode";
+import { useTheme } from "../hooks/useTheme";
 
 // Define possible tabs for clarity
 const TABS = {
@@ -1209,9 +1209,9 @@ function UserDashboard() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const navigate = useNavigate();
-    const { theme, toggleTheme } = useDarkMode();
+    const [theme, setTheme] = useTheme();
     const { user, logout, isAuthenticated } = useAuth();
-    const { notifications: socketNotifications } = useSocket();
+    const { notifications: socketNotifications, socket, connected } = useSocket();
 
     const getStoredJSON = (key, defaultVal = null) => {
         try {
@@ -1269,6 +1269,26 @@ function UserDashboard() {
         loadUser();
     }, [navigate, isAuthenticated]);
 
+    // Listen for profile updates from UserProfile page
+    useEffect(() => {
+        const handleProfileUpdate = () => {
+            console.log("Profile updated event received, reloading profile...");
+            const savedImage = localStorage.getItem("userProfileImage");
+            const savedProfile = getStoredJSON("userProfile");
+            setUserProfile(prev => ({
+                ...prev,
+                image: savedImage || prev.image,
+                name: savedProfile?.name || prev.name,
+                phone: savedProfile?.phone || prev.phone,
+                address: savedProfile?.address || prev.address,
+                email: savedProfile?.email || prev.email,
+            }));
+        };
+
+        window.addEventListener('profileUpdated', handleProfileUpdate);
+        return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
+    }, []);
+
     // --- Fetch Properties for Owner from Express Backend (JWT Protected) ---
     useEffect(() => {
         async function fetchProperties() {
@@ -1318,12 +1338,20 @@ function UserDashboard() {
                     setReceivedTourRequests(received);
 
                     // 2. Buyer's Sent Requests - requests made by the logged-in user
-                    const myItems = allRequests.filter(req =>
-                        String(req.userId) === String(userId) ||
-                        req.name === loggedUser ||
-                        req.applicant_name === loggedUser ||
-                        req.requester_name === loggedUser
-                    );
+                    console.log("Filtering requests - userId:", userId, "loggedUser:", loggedUser);
+                    console.log("All requests count:", allRequests.length);
+                    console.log("All requests:", allRequests.map(r => ({ id: r._id, userId: r.userId, name: r.name, propertyId: r.propertyId, requestType: r.requestType })));
+                    
+                    const myItems = allRequests.filter(req => {
+                        const matchUserId = String(req.userId) === String(userId);
+                        const matchName = req.name === loggedUser;
+                        const matchApplicant = req.applicant_name === loggedUser;
+                        const matchRequester = req.requester_name === loggedUser;
+                        const isMatch = matchUserId || matchName || matchApplicant || matchRequester;
+                        console.log(`Request ${req._id}: userId=${req.userId}, name=${req.name}, matchUserId=${matchUserId}, matchName=${matchName}, isMatch=${isMatch}`);
+                        return isMatch;
+                    });
+                    console.log("Filtered myItems count:", myItems.length);
 
                     // Split buyer's requests into Tours and Applications (Inquiries)
                     const tours = myItems.filter(req => req.requestType?.toLowerCase() === 'tour' || req.request_type?.toLowerCase() === 'tour');
@@ -1331,13 +1359,40 @@ function UserDashboard() {
 
                     setMyTourRequests(tours);
 
-                    // Map applications to format expected by UI rendering logic
-                    const mappedApplications = applications.map(app => ({
-                        ...app,
-                        title: app.property_title || `Property #${app.propertyId}`,
-                        appliedDate: app.createdAt || app.date,
-                    }));
-                    setAppliedProperties(mappedApplications);
+                    // Fetch property details for applications to get images and payment info
+                    const applicationsWithImages = await Promise.all(
+                        applications.map(async (app) => {
+                            try {
+                                const propertyRes = await API.get(`/properties/${app.propertyId}/view`);
+                                const propertyData = propertyRes.data?.property || propertyRes.data;
+                                console.log(`Property data for ${app.propertyId}:`, propertyData);
+                                return {
+                                    ...app,
+                                    title: app.property_title || propertyData?.title || `Property #${app.propertyId}`,
+                                    appliedDate: app.createdAt || app.date,
+                                    image: propertyData?.image || null,
+                                    propertyPrice: propertyData?.price || null,
+                                    propertyType: propertyData?.type || null,
+                                    propertyLocation: propertyData?.location || null,
+                                    propertyState: propertyData?.state || null
+                                };
+                            } catch (err) {
+                                console.error(`Error fetching property ${app.propertyId}:`, err);
+                                return {
+                                    ...app,
+                                    title: app.property_title || `Property #${app.propertyId}`,
+                                    appliedDate: app.createdAt || app.date,
+                                    image: null,
+                                    propertyPrice: null,
+                                    propertyType: null,
+                                    propertyLocation: null,
+                                    propertyState: null
+                                };
+                            }
+                        })
+                    );
+
+                    setAppliedProperties(applicationsWithImages);
                 }
             } catch (error) {
                 console.error("Error fetching requests:", error);
@@ -1349,6 +1404,41 @@ function UserDashboard() {
         }
         fetchRequests();
     }, [properties, userId, loggedUser]);
+
+    // --- Real-time Socket.io Listener for Tour Request Status Updates ---
+    useEffect(() => {
+        if (socket && connected && userId) {
+            const handleStatusChange = (data) => {
+                console.log("Tour request status changed:", data);
+                // Update myTourRequests if this is my request
+                setMyTourRequests(prevRequests => 
+                    prevRequests.map(req => {
+                        const reqId = req._id || req.id;
+                        if (reqId === data.requestId) {
+                            return { ...req, status: data.status };
+                        }
+                        return req;
+                    })
+                );
+                // Update receivedTourRequests if this is a request for my property
+                setReceivedTourRequests(prevRequests => 
+                    prevRequests.map(req => {
+                        const reqId = req._id || req.id;
+                        if (reqId === data.requestId) {
+                            return { ...req, status: data.status };
+                        }
+                        return req;
+                    })
+                );
+            };
+
+            socket.on('tourRequestStatusChanged', handleStatusChange);
+
+            return () => {
+                socket.off('tourRequestStatusChanged', handleStatusChange);
+            };
+        }
+    }, [socket, connected, userId]);
 
 
     // --- Logout Handler ---
@@ -1390,6 +1480,105 @@ function UserDashboard() {
         }
     };
 
+    // --- Edit/Delete Application Handlers ---
+    const [editingApplication, setEditingApplication] = useState(null);
+    const [editAppFormData, setEditAppFormData] = useState({
+        message: "",
+        date: "",
+        time: "",
+        mobile: ""
+    });
+
+    const handleEditApplication = (application) => {
+        setEditingApplication(application);
+        setEditAppFormData({
+            message: application.message || "",
+            date: application.date || "",
+            time: application.time || "",
+            mobile: application.mobile || ""
+        });
+    };
+
+    const handleSaveApplicationEdit = async () => {
+        if (!editingApplication) return;
+        
+        try {
+            const response = await API.put(`/request/${editingApplication._id || editingApplication.id}`, editAppFormData);
+            
+            if (response.data && response.data.success) {
+                alert("Application updated successfully!");
+                // Update local state
+                setAppliedProperties(prev => 
+                    prev.map(app => 
+                        (app._id || app.id) === (editingApplication._id || editingApplication.id) 
+                            ? { ...app, ...editAppFormData }
+                            : app
+                    )
+                );
+                setMyTourRequests(prev => 
+                    prev.map(req => 
+                        (req._id || req.id) === (editingApplication._id || editingApplication.id) 
+                            ? { ...req, ...editAppFormData }
+                            : req
+                    )
+                );
+                setEditingApplication(null);
+            } else {
+                alert("Failed to update application.");
+            }
+        } catch (error) {
+            console.error("Error updating application:", error);
+            console.error("Error details:", error.response?.data);
+            console.error("Error status:", error.response?.status);
+            alert(`Error updating application: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleDeleteApplication = async (application) => {
+        if (!confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
+            return;
+        }
+        
+        try {
+            const appId = application._id || application.id;
+            const response = await API.delete(`/request/${appId}`);
+            
+            if (response.data && response.data.success) {
+                alert("Application deleted successfully!");
+                // Remove from local state
+                setAppliedProperties(prev => prev.filter(app => (app._id || app.id) !== appId));
+                setMyTourRequests(prev => prev.filter(req => (req._id || req.id) !== appId));
+            } else {
+                alert("Failed to delete application.");
+            }
+        } catch (error) {
+            console.error("Error deleting application:", error);
+            console.error("Error details:", error.response?.data);
+            console.error("Error status:", error.response?.status);
+            alert(`Error deleting application: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    // Listen for deleted requests from socket
+    useEffect(() => {
+        if (socket && connected) {
+            const handleRequestDeleted = (data) => {
+                console.log("Request deleted via socket:", data);
+                // Remove from received requests if this was a request for my property
+                setReceivedTourRequests(prev => prev.filter(req => {
+                    const reqId = req._id || req.id;
+                    return reqId !== data.requestId;
+                }));
+            };
+
+            socket.on('requestDeleted', handleRequestDeleted);
+
+            return () => {
+                socket.off('requestDeleted', handleRequestDeleted);
+            };
+        }
+    }, [socket, connected]);
+
 
     // --- RENDER FUNCTIONS ---
 
@@ -1417,30 +1606,9 @@ function UserDashboard() {
 
         return (
             <div>
-                {/* Refresh Button for Tour Requests */}
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Tour Requests ({receivedTourRequests.length})
-                    </h3>
-                    <button
-                        onClick={() => {
-                            // Refresh tour requests from localStorage
-                            if (properties.length > 0) {
-                                const allTourRequests = JSON.parse(localStorage.getItem("allTourRequests") || "[]");
-                                const propertyIds = properties.map(p => p.id);
-                                const userTourRequests = allTourRequests.filter(req =>
-                                    propertyIds.includes(req.property_id)
-                                );
-                                setReceivedTourRequests(userTourRequests);
-                                console.log("Refreshed tour requests:", userTourRequests.length);
-                            }
-                        }}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
-                    >
-                        <i className="ri-refresh-line"></i>
-                        Refresh Requests
-                    </button>
-                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                    Tour Requests ({receivedTourRequests.length})
+                </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {receivedTourRequests.map(req => {
@@ -1777,13 +1945,33 @@ function UserDashboard() {
                                                     <span className="font-semibold">{req.tourTime || req.requested_time || req.time}</span>
                                                 </p>
                                             </div>
-                                            <div className="mt-3">
+                                            <div className="mt-3 flex flex-wrap items-center gap-2">
                                                 <span className={`inline-block text-xs font-bold px-4 py-2 rounded-lg shadow-sm ${req.status === 'Approved' ? 'bg-gradient-to-r from-green-400 to-green-500 text-white' :
                                                     req.status === 'Rejected' ? 'bg-gradient-to-r from-red-400 to-red-500 text-white' :
                                                         'bg-gradient-to-r from-yellow-400 to-orange-400 text-white'
                                                     }`}>
                                                     {req.status}
                                                 </span>
+                                                
+                                                {/* Edit/Delete buttons for pending requests */}
+                                                {req.status !== 'Approved' && req.status !== 'Rejected' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEditApplication(req)}
+                                                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg text-sm transition"
+                                                            title="Edit Request"
+                                                        >
+                                                            <i className="ri-edit-line"></i>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteApplication(req)}
+                                                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg text-sm transition"
+                                                            title="Delete Request"
+                                                        >
+                                                            <i className="ri-delete-bin-line"></i>
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -1826,9 +2014,17 @@ function UserDashboard() {
                                     <div key={application.id || index} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                                         <div className="p-6">
                                             <div className="flex flex-col sm:flex-row gap-5 items-start">
-                                                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg transform transition-transform duration-300 hover:scale-110 hover:rotate-3">
-                                                    <i className="ri-building-2-line text-4xl"></i>
-                                                </div>
+                                                {application.image ? (
+                                                    <img 
+                                                        src={application.image} 
+                                                        alt={application.title || 'Property'} 
+                                                        className="w-20 h-20 object-cover rounded-xl flex-shrink-0 shadow-lg transform transition-transform duration-300 hover:scale-110"
+                                                    />
+                                                ) : (
+                                                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg transform transition-transform duration-300 hover:scale-110 hover:rotate-3">
+                                                        <i className="ri-building-2-line text-4xl"></i>
+                                                    </div>
+                                                )}
                                                 <div className="flex-grow">
                                                     <h4 className="font-bold text-xl text-gray-900 dark:text-gray-100 mb-2">{application.title || 'Property Application'}</h4>
                                                     <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 mb-4">
@@ -1848,7 +2044,8 @@ function UserDashboard() {
                                                         {/* Pay Now button for approved applications */}
                                                         {(application.status === 'Approved' || application.status === 'approved') && (
                                                             <Link
-                                                                to={`/payment/${application.id}`}
+                                                                to={`/property-payment/${application.propertyId}`}
+                                                                state={{ propertyData: { houseId: application.propertyId, title: application.title, price: application.propertyPrice, image: application.image, type: application.propertyType, location: application.propertyLocation, state: application.propertyState } }}
                                                                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 hover:shadow-lg transform hover:scale-105 flex items-center gap-2"
                                                             >
                                                                 <i className="ri-secure-payment-line"></i>
@@ -1870,6 +2067,28 @@ function UserDashboard() {
                                                                 <i className="ri-close-circle-fill text-red-600 text-lg"></i>
                                                                 <span className="text-sm font-bold text-red-700">Application Rejected</span>
                                                             </div>
+                                                        )}
+
+                                                        {/* Edit/Delete buttons for pending applications */}
+                                                        {(application.status !== 'Approved' && application.status !== 'approved' && 
+                                                          application.status !== 'Rejected' && application.status !== 'rejected' &&
+                                                          application.status !== 'Paid' && application.status !== 'paid') && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleEditApplication(application)}
+                                                                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1"
+                                                                    title="Edit Application"
+                                                                >
+                                                                    <i className="ri-edit-line"></i> Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteApplication(application)}
+                                                                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1"
+                                                                    title="Delete Application"
+                                                                >
+                                                                    <i className="ri-delete-bin-line"></i> Delete
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1951,7 +2170,7 @@ function UserDashboard() {
                         </Link>
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={toggleTheme}
+                                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all bg-gray-100 dark:bg-gray-700/60 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                             >
                                 {theme === "light" ? "🌙 Dark" : "☀️ Light"}
@@ -2040,7 +2259,7 @@ function UserDashboard() {
                         {/* Tab bar */}
                         <div className="flex border-b border-gray-200/60 dark:border-gray-700/60 bg-gray-50/80 dark:bg-gray-900/40">
                             {[
-                                { tab: TABS.APPLIED_HOUSES, icon: "ri-home-heart-line", label: "Applied Houses" },
+                                { tab: TABS.APPLIED_HOUSES, icon: "ri-home-heart-line", label: "Applied Properties" },
                                 { tab: TABS.MY_PROPERTIES, icon: "ri-building-4-line", label: "My Properties" },
                                 { tab: TABS.TOUR_REQUESTS_RECEIVED, icon: "ri-calendar-check-line", label: `Tour Requests (${receivedTourRequests.length})` },
                             ].map(({ tab, icon, label }) => (
@@ -2230,6 +2449,103 @@ function UserDashboard() {
                                 </button>
                                 <button
                                     onClick={handleSaveEdit}
+                                    className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Application Modal */}
+            {editingApplication && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    Edit {editingApplication.requestType === 'tour' ? 'Tour Request' : 'Application'}
+                                </h3>
+                                <button
+                                    onClick={() => setEditingApplication(null)}
+                                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <i className="ri-close-line text-2xl"></i>
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Message Field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Message
+                                    </label>
+                                    <textarea
+                                        value={editAppFormData.message}
+                                        onChange={(e) => setEditAppFormData(prev => ({ ...prev, message: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        rows="3"
+                                        placeholder="Your message to the owner..."
+                                    />
+                                </div>
+
+                                {/* Mobile Field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Mobile Number
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={editAppFormData.mobile}
+                                        onChange={(e) => setEditAppFormData(prev => ({ ...prev, mobile: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        placeholder="Your contact number..."
+                                    />
+                                </div>
+
+                                {/* Date Field - Only for tours */}
+                                {editingApplication.requestType === 'tour' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Preferred Date
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={editAppFormData.date}
+                                            onChange={(e) => setEditAppFormData(prev => ({ ...prev, date: e.target.value }))}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Time Field - Only for tours */}
+                                {editingApplication.requestType === 'tour' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Preferred Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={editAppFormData.time}
+                                            onChange={(e) => setEditAppFormData(prev => ({ ...prev, time: e.target.value }))}
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={() => setEditingApplication(null)}
+                                    className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveApplicationEdit}
                                     className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
                                 >
                                     Save Changes

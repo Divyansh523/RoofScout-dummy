@@ -90,6 +90,11 @@ function App() {
                     <AdmTenants />
                   </ProtectedRoute>
                 } />
+                <Route path="/AdmPayments" element={
+                  <ProtectedRoute requireAuth={true} requireAdmin={true}>
+                    <AdmPayments />
+                  </ProtectedRoute>
+                } />
                 <Route path="/AdmInvoice" element={
                   <ProtectedRoute requireAuth={true} requireAdmin={true}>
                     <AdmInvoice />

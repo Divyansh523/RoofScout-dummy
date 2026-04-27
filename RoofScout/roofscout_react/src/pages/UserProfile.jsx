@@ -52,9 +52,14 @@ function UserProfile() {
 
   const handleSave = () => {
     const { name, address, phone, email } = formData;
-    // Note: In a real app, this should make an API call to update the user profile
-    // For now, we'll just show a success message
+    // Save profile data to localStorage
+    localStorage.setItem('userProfile', JSON.stringify({ name, address, phone, email }));
+    if (profileImage) {
+      localStorage.setItem('userProfileImage', profileImage);
+    }
+    // Dispatch event to notify other components
     window.dispatchEvent(new Event('usernameUpdated'));
+    window.dispatchEvent(new Event('profileUpdated'));
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
