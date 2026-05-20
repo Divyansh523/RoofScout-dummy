@@ -5,7 +5,7 @@
 const SESSION_KEY = "rs_session";
 const TOKEN_KEY = "rs_token";
 const AUTH_CALLBACKS = [];
-const API_BASE_URL = "http://localhost:5000/api/auth";
+const API_BASE_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 
 function getSession() {
     try {
